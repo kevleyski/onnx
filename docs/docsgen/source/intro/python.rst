@@ -20,7 +20,7 @@ The linear regression is the most simple model
 in machine learning described by the following expression
 :math:`Y = XA + B`. We can see it as a function of three
 variables :math:`Y = f(X, A, B)` decomposed into
-`y = Add(MatMul(X, A), B))`. That what's we need to represent
+`y = Add(MatMul(X, A), B)`. That what's we need to represent
 with ONNX operators. The first thing is to implement a function
 with :ref:`ONNX operators <l-onnx-operators>`.
 ONNX is strongly typed. Shape and type must be defined for both
@@ -80,7 +80,7 @@ intermediate results. This is how it looks like.
                         [Y])  # outputs
 
     # onnx graph
-    # there is no metata in this case.
+    # there is no metadata in this case.
 
     onnx_model = make_model(graph)
 
@@ -167,7 +167,7 @@ Serialization
 =============
 
 ONNX is built on the top of protobuf. It adds the necessary definitions
-to describes a machine learned and most of the time, ONNX is used
+to describe a machine learning model and most of the time, ONNX is used
 to serialize or deserialize a model. First section addresses this need.
 Second section introduces the serialization and deserialization of
 data such as tensors, sparse tensors...
@@ -230,7 +230,7 @@ overcome that limit.
 Data Serialization
 ++++++++++++++++++
 
-The serialization of tensor usually happens the following:
+The serialization of tensor usually happens like the following:
 
 .. exec_code::
 
@@ -250,7 +250,7 @@ The serialization of tensor usually happens the following:
     with open("saved_tensor.pb", "wb") as f:
         f.write(serialized_tensor)
 
-And the deserialization.
+And the deserialization like:
 
 .. exec_code::
 
@@ -269,7 +269,7 @@ And the deserialization.
     numpy_tensor = to_array(onnx_tensor)
     print(numpy_tensor)
 
-The same schema can be used for :ref:`l-tensorproto` but not only:
+The same schema can be used for but not limited to :ref:`l-tensorproto`:
 
 .. exec_code::
 
@@ -363,7 +363,7 @@ how the initializers look like.
     onnx_model = make_model(graph)
     check_model(onnx_model)
 
-    print('** intializer **')
+    print('** initializer **')
     for init in onnx_model.graph.initializer:
         print(init)
 
@@ -379,7 +379,7 @@ Attributes
 
 Some operators need attributes such as :ref:`l-onnx-doc-Transpose` operator.
 Let's build the graph for expression :math:`y = XA' + B` or
-`y = Add(MatMul(X, Transpose(A)) + B)`. Tranpose needs an attribute
+`y = Add(MatMul(X, Transpose(A)) + B)`. Transpose needs an attribute
 defining the permutation of axes: `perm=[1, 0]`. It is added
 as a named attribute in function `make_node`.
 
@@ -625,7 +625,7 @@ The whole is easier to visualize with the following image.
 .. image:: images/dot_if_py.png
 
 Both else and then branches are very simple.
-Node *If* could even be replace with a node *Where* and
+Node *If* could even be replaced with a node *Where* and
 that would be faster. It becomes interesting when both branches
 are bigger and skipping one is more efficient.
 
@@ -869,7 +869,7 @@ the default implementation based on existing operators.
 
 Function `make_function` is used to define a function.
 It works like a graph with less types. It is more like a
-template. This API may evolve. It does not include intializers either.
+template. This API may evolve. It does not include initializers either.
 
 A function with no attribute
 ++++++++++++++++++++++++++++
@@ -930,7 +930,7 @@ A function with attributes
 
 .. index:: ref_attr_name
 
-The following functions is equivalent as the previous one except
+The following functions are equivalent to the previous one except
 one input, *B*, was converted into an argument named *bias*.
 The code is almost the same except the bias is now a constant.
 Inside the function definition, a node *Constant* is created
@@ -985,7 +985,7 @@ with the attribute `ref_attr_name`.
 
     graph = make_graph(
         [make_node('LinearRegression', ['X', 'A'], ['Y1'], domain=new_domain,
-                   # bias is now an argument of the function and defined as a tensor
+                   # bias is now an argument of the function and is defined as a tensor
                    bias=make_tensor('former_B', TensorProto.FLOAT, [1], [0.67])),
          make_node('Abs', ['Y1'], ['Y'])],
         'example',
@@ -1003,7 +1003,7 @@ Parsing
 =======
 
 Module onnx provides a faster way to define a graph
-a lot easier to read. That's easy to use when the graph is built
+and is lot easier to read. That's easy to use when the graph is built
 in a single function, less easy when the graph is built from many
 different functions converting each piece of a machine learning
 pipeline.

@@ -1,4 +1,5 @@
 # SPDX-License-Identifier: Apache-2.0
+# pylint: disable=C0302,R0912
 import collections.abc
 import numbers
 import struct
@@ -66,6 +67,7 @@ VERSION_TABLE: VersionTableType = [
     ("1.10.2", 8, 15, 2, 1),
     ("1.11.0", 8, 16, 3, 1),
     ("1.12.0", 8, 17, 3, 1),
+    ("1.13.0", 8, 18, 3, 1),
 ]
 
 VersionMapType = Dict[Tuple[str, int], int]
