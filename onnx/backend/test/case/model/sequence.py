@@ -1,59 +1,59 @@
+# Copyright (c) ONNX Project Contributors
+
 # SPDX-License-Identifier: Apache-2.0
 
 from __future__ import annotations
 
 import typing
-from typing import List, Optional, Union
 
 import numpy as np
 
 import onnx
 from onnx import TensorProto
+from onnx.backend.test.case.base import Base
+from onnx.backend.test.case.model import expect
 
-from ..base import Base
-from . import expect
 
-
-def SequenceEmptyImpl() -> List[Optional[np.ndarray]]:
+def SequenceEmptyImpl() -> list[np.ndarray | None]:
     return []
 
 
-def SequenceConstructImpl(*tensors: np.ndarray) -> List[np.ndarray]:
+def SequenceConstructImpl(*tensors: np.ndarray) -> list[np.ndarray]:
     return list(tensors)
 
 
 def SequenceInsertImpl(
-    sequence: List[np.ndarray], tensor: np.ndarray, position: Optional[int] = None
-) -> List[np.ndarray]:
+    sequence: list[np.ndarray], tensor: np.ndarray, position: int | None = None
+) -> list[np.ndarray]:
     if position is None:
         position = len(sequence)
     sequence.insert(position, tensor)
     return sequence
 
 
-def SequenceAtImpl(sequence: List[np.ndarray], position: int) -> np.ndarray:
+def SequenceAtImpl(sequence: list[np.ndarray], position: int) -> np.ndarray:
     return sequence[position]
 
 
 def SequenceEraseImpl(
-    sequence: List[np.ndarray], position: Optional[int] = None
-) -> List[Optional[np.ndarray]]:
+    sequence: list[np.ndarray], position: int | None = None
+) -> list[np.ndarray | None]:
     if position is None:
         position = -1
     del sequence[position]
     return sequence
 
 
-def SequenceLengthImpl(sequence: List[np.ndarray]) -> np.int64:
+def SequenceLengthImpl(sequence: list[np.ndarray]) -> np.int64:
     return np.int64(len(sequence))
 
 
 def SplitToSequenceImpl(
     tensor: np.ndarray,
-    split: Optional[Union[int, List[int]]] = None,
+    split: int | list[int] | None = None,
     axis: int = 0,
     keepdims: int = 1,
-) -> List[np.ndarray]:
+) -> list[np.ndarray]:
     dim_size = tensor.shape[axis]
     if split is None:
         split = 1
@@ -64,33 +64,34 @@ def SplitToSequenceImpl(
             results = np.array_split(tensor, split_indices, axis)
             return [np.squeeze(res, axis) for res in results]
     if np.isscalar(split):
-        split_indices = [i * split + 1 for i in range(dim_size) if i * split + 1 < dim_size]  # type: ignore
+        split_indices = [
+            i * split + 1 for i in range(dim_size) if i * split + 1 < dim_size
+        ]
     else:
         split_indices = np.cumsum(split) + 1
-    return np.array_split(tensor, split_indices, axis)  # type: ignore
+    return np.array_split(tensor, split_indices, axis)
 
 
 def ConcatFromSequenceImpl(
-    sequence: List[np.ndarray], axis: int, new_axis: Optional[int] = 0
+    sequence: list[np.ndarray], axis: int, new_axis: int | None = 0
 ) -> np.ndarray:
     if not new_axis:
         return np.concatenate(sequence, axis)
-    else:
-        return np.stack(sequence, axis)
+    return np.stack(sequence, axis)
 
 
 class Sequence(Base):
     @staticmethod
     def export() -> None:
         def make_graph(
-            nodes: List[onnx.helper.NodeProto],
-            input_shapes: List[Optional[typing.Sequence[Union[str, int]]]],
-            output_shapes: List[Optional[typing.Sequence[Union[str, int]]]],
-            input_names: List[str],
-            output_names: List[str],
-            input_types: List[TensorProto.DataType],
-            output_types: List[TensorProto.DataType],
-            initializers: Optional[List[TensorProto]] = None,
+            nodes: list[onnx.helper.NodeProto],
+            input_shapes: list[typing.Sequence[str | int] | None],
+            output_shapes: list[typing.Sequence[str | int] | None],
+            input_names: list[str],
+            output_names: list[str],
+            input_types: list[TensorProto.DataType],
+            output_types: list[TensorProto.DataType],
+            initializers: list[TensorProto] | None = None,
         ) -> onnx.helper.GraphProto:
             graph = onnx.helper.make_graph(
                 nodes=nodes,
@@ -158,11 +159,11 @@ class Sequence(Base):
                 seq_insert_node3,
                 seq_at_node,
             ],
-            [x_shape, y_shape, z_shape, [], []],  # type: ignore
-            [out_shape],  # type: ignore
+            [x_shape, y_shape, z_shape, [], []],
+            [out_shape],
             ["X", "Y", "Z", "pos", "pos_at"],
             ["out"],
-            [onnx.TensorProto.FLOAT] * 3 + [onnx.TensorProto.INT64] * 2,  # type: ignore
+            [onnx.TensorProto.FLOAT] * 3 + [onnx.TensorProto.INT64] * 2,
             [onnx.TensorProto.FLOAT],
             [pos, pos_at],
         )
@@ -205,11 +206,11 @@ class Sequence(Base):
 
         graph = make_graph(
             [seq_construct_node, seq_erase_node, seq_at_node],
-            [tensor_shape, tensor_shape, tensor_shape, [], []],  # type: ignore
-            [tensor_shape],  # type: ignore
+            [tensor_shape, tensor_shape, tensor_shape, [], []],
+            [tensor_shape],
             ["X", "Y", "Z", "pos_erase", "pos_at"],
             ["out"],
-            [onnx.TensorProto.FLOAT] * 3 + [onnx.TensorProto.INT64] * 2,  # type: ignore
+            [onnx.TensorProto.FLOAT] * 3 + [onnx.TensorProto.INT64] * 2,
             [onnx.TensorProto.FLOAT],
             [pos_erase, pos_at],
         )
@@ -260,11 +261,11 @@ class Sequence(Base):
 
         graph = make_graph(
             [seq_construct_node, seq_erase_node, seq_insert_node, seq_at_node],
-            [tensor_shape, tensor_shape, tensor_shape, [], [], []],  # type: ignore
-            [tensor_shape],  # type: ignore
+            [tensor_shape, tensor_shape, tensor_shape, [], [], []],
+            [tensor_shape],
             ["X", "Y", "Z", "pos_erase", "pos_insert", "pos_at"],
             ["out"],
-            [onnx.TensorProto.FLOAT] * 3 + [onnx.TensorProto.INT64] * 3,  # type: ignore
+            [onnx.TensorProto.FLOAT] * 3 + [onnx.TensorProto.INT64] * 3,
             [onnx.TensorProto.FLOAT],
             [pos_erase, pos_insert, pos_at],
         )
@@ -294,11 +295,11 @@ class Sequence(Base):
 
         graph = make_graph(
             [seq_construct_node, seq_concat_node],
-            [tensor_shape] * 3,  # type: ignore
-            [concat_out_shape],  # type: ignore
+            [tensor_shape] * 3,
+            [concat_out_shape],
             ["X", "Y", "Z"],
             ["out"],
-            [onnx.TensorProto.FLOAT] * 3,  # type: ignore
+            [onnx.TensorProto.FLOAT] * 3,
             [onnx.TensorProto.FLOAT],
         )
         model = onnx.helper.make_model_gen_version(
@@ -329,11 +330,11 @@ class Sequence(Base):
 
         graph = make_graph(
             [seq_construct_node, seq_concat_node],
-            [tensor_shape] * 3,  # type: ignore
-            [concat_out_shape],  # type: ignore
+            [tensor_shape] * 3,
+            [concat_out_shape],
             ["X", "Y", "Z"],
             ["out"],
-            [onnx.TensorProto.FLOAT] * 3,  # type: ignore
+            [onnx.TensorProto.FLOAT] * 3,
             [onnx.TensorProto.FLOAT],
         )
         model = onnx.helper.make_model_gen_version(
@@ -352,7 +353,7 @@ class Sequence(Base):
         seq_len_node = onnx.helper.make_node("SequenceLength", ["seq_1"], ["len"])
 
         tensor_shape = [2, 3, 4]
-        len_shape = []  # type: ignore
+        len_shape = []
 
         x = np.ones(tensor_shape, dtype=np.float32)
         out = SplitToSequenceImpl(x, axis=-1)
@@ -372,7 +373,7 @@ class Sequence(Base):
                     "len", onnx.TensorProto.INT64, len_shape
                 )
             ],
-        )  # type: ignore
+        )
 
         model = onnx.helper.make_model_gen_version(
             graph,
@@ -400,8 +401,8 @@ class Sequence(Base):
 
         graph = make_graph(
             [seq_split_node, seq_at_node],
-            [tensor_shape, []],  # type: ignore
-            [out_shape],  # type: ignore
+            [tensor_shape, []],
+            [out_shape],
             ["X", "pos_at"],
             ["out"],
             [onnx.TensorProto.DOUBLE, onnx.TensorProto.INT64],
@@ -421,8 +422,8 @@ class Sequence(Base):
         )
         seq_len_node = onnx.helper.make_node("SequenceLength", ["seq_1"], ["len"])
 
-        tensor_shape = ["n"]  # type: ignore
-        splits_shape = [3]  # type: ignore
+        tensor_shape = ["n"]
+        splits_shape = [3]
 
         x = np.array([]).astype(np.float32)
         splits = np.array([0, 0, 0]).astype(np.int64)
@@ -434,17 +435,17 @@ class Sequence(Base):
             inputs=[
                 onnx.helper.make_tensor_value_info(
                     "X", onnx.TensorProto.FLOAT, tensor_shape
-                ),  # type: ignore
+                ),
                 onnx.helper.make_tensor_value_info(
                     "Splits", onnx.TensorProto.INT64, splits_shape
                 ),
-            ],  # type: ignore
+            ],
             outputs=[
                 onnx.helper.make_tensor_value_info(
                     "len", onnx.TensorProto.INT64, len_shape
                 )
             ],
-        )  # type: ignore
+        )
 
         model = onnx.helper.make_model_gen_version(
             graph,

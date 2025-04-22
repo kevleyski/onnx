@@ -1,11 +1,11 @@
+# Copyright (c) ONNX Project Contributors
+
 # SPDX-License-Identifier: Apache-2.0
-# pylint: disable=W0221
+from __future__ import annotations
 
 import numpy as np
 
-from onnx.defs import onnx_opset_version
-
-from ._op import OpRunReduceNumpy
+from onnx.reference.ops._op import OpRunReduceNumpy
 
 
 def compute_log_sum_exp(data, axes, keepdims):
@@ -23,40 +23,23 @@ def compute_log_sum_exp(data, axes, keepdims):
 
 
 class ReduceLogSumExp_1(OpRunReduceNumpy):
-    def run(self, data, axes=None, keepdims=None):  # type: ignore
-        tax = tuple(axes) if axes else None
+    def _run(self, data, axes=None, keepdims=None):  # type: ignore
+        tax = tuple(axes) if axes is not None else None
+
+        if data.size == 0:
+            return self.reduce_constant(data, -np.inf, tax, keepdims)
         return compute_log_sum_exp(data, tax, keepdims)
 
 
-class ReduceLogSumExp_11(ReduceLogSumExp_1):
-    pass
-
-
-class ReduceLogSumExp_13(ReduceLogSumExp_1):
-    pass
-
-
 class ReduceLogSumExp_18(OpRunReduceNumpy):
-    def run(self, data, axes=None, keepdims=None, noop_with_empty_axes=None):  # type: ignore
-        keepdims = keepdims or self.keepdims  # type: ignore
-        noop_with_empty_axes = noop_with_empty_axes or self.noop_with_empty_axes  # type: ignore
-        return self._run(data, axes, keepdims, noop_with_empty_axes)
-
-    def _run(self, data, axes, keepdims=1, noop_with_empty_axes=0):  # type: ignore
+    def _run(self, data, axes=None, keepdims=1, noop_with_empty_axes=0):  # type: ignore
         if self.is_axes_empty(axes) and noop_with_empty_axes:  # type: ignore
             return (data,)
 
         axes = self.handle_axes(axes)
         keepdims = keepdims != 0  # type: ignore
 
+        if data.size == 0:
+            return self.reduce_constant(data, -np.inf, axes, keepdims)
+
         return compute_log_sum_exp(data, axes, keepdims)
-
-
-if onnx_opset_version() >= 18:
-    ReduceLogSumExp = ReduceLogSumExp_18
-elif onnx_opset_version() >= 13:
-    ReduceLogSumExp = ReduceLogSumExp_13  # type: ignore
-elif onnx_opset_version() >= 11:
-    ReduceLogSumExp = ReduceLogSumExp_11  # type: ignore
-else:
-    ReduceLogSumExp = ReduceLogSumExp_1  # type: ignore

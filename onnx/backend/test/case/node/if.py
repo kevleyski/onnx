@@ -1,14 +1,16 @@
+# Copyright (c) ONNX Project Contributors
+#
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import numpy as np
 
 import onnx
+from onnx.backend.test.case.base import Base
+from onnx.backend.test.case.node import expect
 
-from ..base import Base
-from . import expect
 
-
-def compute_if_outputs(x, cond):  # type: ignore
+def compute_if_outputs(x, cond):
     if cond:
         return []
     else:

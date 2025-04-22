@@ -1,14 +1,18 @@
+# Copyright (c) ONNX Project Contributors
+
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
-
-from typing import Sequence
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 import onnx
+from onnx.backend.test.case.base import Base
+from onnx.backend.test.case.model import expect
 
-from ..base import Base
-from . import expect
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 
 class NormalizeStrings(Base):

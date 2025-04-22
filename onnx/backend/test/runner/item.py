@@ -1,9 +1,13 @@
+# Copyright (c) ONNX Project Contributors
+#
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import dataclasses
-from typing import Any, Callable, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable
 
-from onnx import ModelProto, NodeProto
+if TYPE_CHECKING:
+    from onnx import ModelProto, NodeProto
 
 # A container that hosts the test function and the associated
 # test item (ModelProto)
@@ -12,4 +16,4 @@ from onnx import ModelProto, NodeProto
 @dataclasses.dataclass
 class TestItem:
     func: Callable[..., Any]
-    proto: List[Optional[Union[ModelProto, NodeProto]]]
+    proto: list[ModelProto | NodeProto | None]

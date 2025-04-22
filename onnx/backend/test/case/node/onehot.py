@@ -1,14 +1,16 @@
+# Copyright (c) ONNX Project Contributors
+#
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import numpy as np
 
 import onnx
+from onnx.backend.test.case.base import Base
+from onnx.backend.test.case.node import expect
 
-from ..base import Base
-from . import expect
 
-
-def one_hot(indices, depth, axis=-1, dtype=np.float32):  # type: ignore
+def one_hot(indices, depth, axis=-1, dtype=np.float32):
     """Compute one hot from indices at a specific axis"""
     values = np.asarray(indices)
     rank = len(values.shape)
@@ -20,7 +22,7 @@ def one_hot(indices, depth, axis=-1, dtype=np.float32):  # type: ignore
     targets = np.reshape(
         depth_range, (1,) * len(ls) + depth_range.shape + (1,) * len(rs)
     )
-    values = np.reshape(np.mod(values, depth), ls + (1,) + rs)
+    values = np.reshape(np.mod(values, depth), (*ls, 1, *rs))
     return np.asarray(targets == values, dtype=dtype)
 
 

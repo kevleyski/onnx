@@ -1,10 +1,15 @@
-<!--- SPDX-License-Identifier: Apache-2.0 -->
+<!--
+Copyright (c) ONNX Project Contributors
+
+SPDX-License-Identifier: Apache-2.0
+-->
 
 # Python API Overview
 
 The full API is described at [API Reference](https://onnx.ai/onnx/api).
 
 ## Loading an ONNX Model
+
 ```python
 import onnx
 
@@ -12,7 +17,7 @@ import onnx
 onnx_model = onnx.load("path/to/the/model.onnx")
 ```
 Runnable IPython notebooks:
-- [load_model.ipynb](/onnx/examples/load_model.ipynb)
+- [load_model.ipynb](/examples/load_model.ipynb)
 
 ## Loading an ONNX Model with External Data
 
@@ -57,7 +62,7 @@ onnx_model = ...
 onnx.save(onnx_model, "path/to/the/model.onnx")
 ```
 Runnable IPython notebooks:
-- [save_model.ipynb](/onnx/examples/save_model.ipynb)
+- [save_model.ipynb](/examples/save_model.ipynb)
 
 
 ## Converting and Saving an ONNX Model to External Data
@@ -117,55 +122,49 @@ for tensor_dtype in helper.get_all_tensor_dtypes():
 
 ```
 Runnable IPython notebooks:
-- [np_array_tensorproto.ipynb](/onnx/examples/np_array_tensorproto.ipynb)
+- [np_array_tensorproto.ipynb](/examples/np_array_tensorproto.ipynb)
 
 ## Creating an ONNX Model Using Helper Functions
 ```python
 import onnx
-from onnx import helper
-from onnx import AttributeProto, TensorProto, GraphProto
+from onnx import helper, AttributeProto, TensorProto, GraphProto
 
-
-# The protobuf definition can be found here:
-# https://github.com/onnx/onnx/blob/main/onnx/onnx.proto
-
-
-# Create one input (ValueInfoProto)
+# Create inputs and output value info
 X = helper.make_tensor_value_info("X", TensorProto.FLOAT, [3, 2])
-pads = helper.make_tensor_value_info("pads", TensorProto.FLOAT, [1, 4])
+pads = helper.make_tensor_value_info("pads", TensorProto.INT64, [8])  # pads is INT64
+Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [5, 4])
 
-value = helper.make_tensor_value_info("value", AttributeProto.FLOAT, [1])
-
-
-# Create one output (ValueInfoProto)
-Y = helper.make_tensor_value_info("Y", TensorProto.FLOAT, [3, 4])
-
-# Create a node (NodeProto) - This is based on Pad-11
+# Create Pad node with 'value' attribute (not input)
 node_def = helper.make_node(
-    "Pad",                  # name
-    ["X", "pads", "value"], # inputs
-    ["Y"],                  # outputs
-    mode="constant",        # attributes
+    "Pad",
+    inputs=["X", "pads"],  # Inputs: X and pads (INT64)
+    outputs=["Y"],
+    mode="constant",       # Attribute for padding mode
+    value=0.0              # Attribute for fill value
 )
 
-# Create the graph (GraphProto)
+# Build graph and model
 graph_def = helper.make_graph(
-    [node_def],        # nodes
-    "test-model",      # name
-    [X, pads, value],  # inputs
-    [Y],               # outputs
+    [node_def],
+    "test-model",
+    [X, pads],
+    [Y],
+)
+model_def = helper.make_model(
+    graph_def,
+    producer_name="onnx-example",
+    opset_imports=[helper.make_opsetid("", 11)]  # OPSET 11 required
 )
 
-# Create the model (ModelProto)
-model_def = helper.make_model(graph_def, producer_name="onnx-example")
-
-print(f"The model is:\n{model_def}")
+# Validate the model
 onnx.checker.check_model(model_def)
-print("The model is checked!")
+print("Model is valid!")
+
+
 ```
 Runnable IPython notebooks:
-- [make_model.ipynb](/onnx/examples/make_model.ipynb)
-- [Protobufs.ipynb](/onnx/examples/Protobufs.ipynb)
+- [make_model.ipynb](/examples/make_model.ipynb)
+- [Protobufs.ipynb](/examples/Protobufs.ipynb)
 
 ## Conversion utilities for mapping attributes in ONNX IR
 ```python
@@ -199,7 +198,7 @@ else:
     print("The model is valid!")
 ```
 Runnable IPython notebooks:
-- [check_model.ipynb](/onnx/examples/check_model.ipynb)
+- [check_model.ipynb](/examples/check_model.ipynb)
 
 ### Checking a Large ONNX Model >2GB
 Current checker supports checking models with external data, but for those models larger than 2GB, please use the model path for onnx.checker and the external data needs to be under the same directory.
@@ -243,7 +242,7 @@ onnx.checker.check_model(inferred_model)
 print(f"After shape inference, the shape info of Y is:\n{inferred_model.graph.value_info}")
 ```
 Runnable IPython notebooks:
-- [shape_inference.ipynb](/onnx/examples/shape_inference.ipynb)
+- [shape_inference.ipynb](/examples/shape_inference.ipynb)
 
 ### Shape inference a Large ONNX Model >2GB
 Current shape_inference supports models with external data, but for those models larger than 2GB, please use the model path for onnx.shape_inference.infer_shapes_path and the external data needs to be under the same directory. You can specify the output path for saving the inferred model; otherwise, the default output path is same as the original model path.
@@ -258,6 +257,34 @@ onnx.shape_inference.infer_shapes_path("path/to/the/model.onnx")
 onnx.shape_inference.infer_shapes_path("path/to/the/model.onnx", "output/inferred/model.onnx")
 
 # inferred_model = onnx.shape_inference.infer_shapes(loaded_onnx_model) will fail if given >2GB model
+```
+
+## Running Type Inference on an ONNX Function
+
+```python
+import onnx
+import onnx.helper
+import onnx.parser
+import onnx.shape_inference
+
+function_text = """
+    <opset_import: [ "" : 18 ], domain: "local">
+    CastTo <dtype> (x) => (y) {
+        y = Cast <to : int = @dtype> (x)
+    }
+"""
+function = onnx.parser.parse_function(function_text)
+
+# The function above has one input-parameter x, and one attribute-parameter dtype.
+# To apply type-and-shape-inference to this function, we must supply the type of
+# input-parameter and an attribute value for the attribute-parameter as below:
+
+float_type_ = onnx.helper.make_tensor_type_proto(1, None)
+dtype_6 = onnx.helper.make_attribute("dtype", 6)
+result = onnx.shape_inference.infer_function_output_types(
+    function, [float_type_], [dtype_6]
+)
+print(result) # a list containing the (single) output type
 ```
 
 ## Converting Version of an ONNX Model within Default Domain (""/"ai.onnx")
@@ -276,7 +303,7 @@ print(f"The model before conversion:\n{original_model}")
 # Apply the version conversion on the original model
 converted_model = version_converter.convert_version(original_model, <int target_version>)
 
-print(f"The model after conversion:\n{converted_mode}")
+print(f"The model after conversion:\n{converted_model}")
 ```
 
 ## Utility Functions
@@ -441,4 +468,22 @@ input = """
 """
 model = onnx.parser.parse_model(input)
 
+```
+
+## ONNX Inliner
+
+Functions `onnx.inliner.inline_local_functions` and `inline_selected_functions` can be used
+to inline model-local functions in an ONNX model. In particular, `inline_local_functions` can
+be used to produce a function-free model (suitable for backends that do not handle or support
+functions). On the other hand, `inline_selected_functions` can be used to inline selected
+functions. There is no support yet for inlining ONNX standard ops that are functions (also known
+as schema-defined functions).
+
+```python
+import onnx
+import onnx.inliner
+
+model = onnx.load("path/to/the/model.onnx")
+inlined = onnx.inliner.inline_local_functions(model)
+onnx.save("path/to/the/inlinedmodel.onnx")
 ```

@@ -1,9 +1,14 @@
+# Copyright (c) ONNX Project Contributors
+
 # SPDX-License-Identifier: Apache-2.0
-# pylint: disable=W0221
+from __future__ import annotations
 
-import numpy as np
+from typing import TYPE_CHECKING
 
-from ._op import OpRunUnaryNum
+from onnx.reference.ops._op import OpRunUnaryNum
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 def _leaky_relu(x: np.ndarray, alpha: float) -> np.ndarray:
@@ -15,4 +20,4 @@ def _leaky_relu(x: np.ndarray, alpha: float) -> np.ndarray:
 class LeakyRelu(OpRunUnaryNum):
     def _run(self, x, alpha=None):  # type: ignore
         alpha = alpha or self.alpha  # type: ignore
-        return (_leaky_relu(x, alpha),)
+        return (_leaky_relu(x, alpha).astype(x.dtype),)

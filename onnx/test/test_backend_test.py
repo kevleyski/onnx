@@ -1,12 +1,13 @@
+# Copyright (c) ONNX Project Contributors
+
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import itertools
 import os
 import platform
 import unittest
-from typing import Any, Optional, Sequence, Tuple
-
-import numpy
+from typing import TYPE_CHECKING, Any
 
 import onnx.backend.base
 import onnx.backend.test
@@ -15,6 +16,11 @@ import onnx.version_converter
 from onnx import ModelProto, NodeProto, TensorProto
 from onnx.backend.base import Device, DeviceType
 from onnx.backend.test.runner import BackendIsNotSupposedToImplementIt
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    import numpy
 
 # The following just executes the fake backend through the backend test
 # infrastructure. Since we don't have full reference implementation of all ops
@@ -32,14 +38,14 @@ class DummyBackend(onnx.backend.base.Backend):
     @classmethod
     def prepare(
         cls, model: ModelProto, device: str = "CPU", **kwargs: Any
-    ) -> Optional[onnx.backend.base.BackendRep]:
+    ) -> onnx.backend.base.BackendRep | None:
         super().prepare(model, device, **kwargs)
 
-        # test strict shape inference
         onnx.checker.check_model(model)
-        model = onnx.shape_inference.infer_shapes(
-            model, check_type=True, strict_mode=True
-        )
+
+        # by default test strict shape inference
+        kwargs = {"check_type": True, "strict_mode": True, **kwargs}
+        model = onnx.shape_inference.infer_shapes(model, **kwargs)
 
         value_infos = {
             vi.name: vi
@@ -67,9 +73,9 @@ class DummyBackend(onnx.backend.base.Backend):
         node: NodeProto,
         inputs: Any,
         device: str = "CPU",
-        outputs_info: Optional[Sequence[Tuple[numpy.dtype, Tuple[int, ...]]]] = None,
-        **kwargs: Any,
-    ) -> Optional[Tuple[Any, ...]]:
+        outputs_info: Sequence[tuple[numpy.dtype, tuple[int, ...]]] | None = None,
+        **kwargs: Any,  # noqa: ARG003
+    ) -> tuple[Any, ...] | None:
         super().run_node(node, inputs, device=device, outputs_info=outputs_info)
         raise BackendIsNotSupposedToImplementIt(
             "This is the dummy backend test that doesn't verify the results but does run the checker"
@@ -78,9 +84,7 @@ class DummyBackend(onnx.backend.base.Backend):
     @classmethod
     def supports_device(cls, device: str) -> bool:
         d = Device(device)
-        if d.type == DeviceType.CPU:
-            return True
-        return False
+        return d.type == DeviceType.CPU  # type: ignore[no-any-return]
 
 
 test_coverage_safelist = {
@@ -100,17 +104,24 @@ test_coverage_safelist = {
 def do_enforce_test_coverage_safelist(model: ModelProto) -> bool:
     if model.graph.name not in test_coverage_safelist:
         return False
-    for node in model.graph.node:
-        if node.op_type in {"RNN", "LSTM", "GRU"}:
-            return False
-    return True
+    return all(node.op_type not in {"RNN", "LSTM", "GRU"} for node in model.graph.node)
 
 
-backend_test = onnx.backend.test.BackendTest(DummyBackend, __name__)
+test_kwargs = {
+    # https://github.com/onnx/onnx/issues/5510 (test_mvn fails with test_backend_test.py)
+    "test_mvn": {"strict_mode": False},
+}
+
+backend_test = onnx.backend.test.BackendTest(
+    DummyBackend, __name__, test_kwargs=test_kwargs
+)
 if os.getenv("APPVEYOR"):
     backend_test.exclude(r"(test_vgg19|test_zfnet)")
 if platform.architecture()[0] == "32bit":
     backend_test.exclude(r"(test_vgg19|test_zfnet|test_bvlc_alexnet)")
+
+# Needs investigation on onnxruntime.
+backend_test.exclude("test_dequantizelinear_e4m3fn_float16")
 
 # import all test cases at global scope to make them visible to python.unittest
 globals().update(backend_test.test_cases)

@@ -1,3 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+
+# Copyright (c) ONNX Project Contributors
+from __future__ import annotations
+
 import unittest
 
 import onnx
@@ -5,7 +10,7 @@ from onnx import checker, utils
 
 
 class TestFunction(unittest.TestCase):
-    def _verify_function_set(self, extracted_model, function_set, func_domain):  # type: ignore
+    def _verify_function_set(self, extracted_model, function_set, func_domain):
         checker.check_model(extracted_model)
         self.assertEqual(len(extracted_model.functions), len(function_set))
         for function in function_set:
@@ -21,8 +26,7 @@ class TestFunction(unittest.TestCase):
             )
 
     def test_extract_model_with_local_function(self) -> None:
-        r"""
-        #   1. build a model with graph below. extract models with output combinations
+        r"""#   1. build a model with graph below. extract models with output combinations
         #   2. validate extracted models' local functions
         #
         # model graph:
@@ -49,7 +53,6 @@ class TestFunction(unittest.TestCase):
         #                c
         #
         """
-
         # function common
         func_domain = "local"
         func_opset_imports = [onnx.helper.make_opsetid("", 14)]

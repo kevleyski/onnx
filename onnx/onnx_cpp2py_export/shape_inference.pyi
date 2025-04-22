@@ -10,3 +10,8 @@ def infer_shapes_path(
     strict_mode: bool,
     data_prop: bool,
 ) -> None: ...
+def infer_function_output_types(
+    b: bytes,
+    input_types: list[bytes],
+    attributes: list[bytes],
+) -> list[bytes]: ...

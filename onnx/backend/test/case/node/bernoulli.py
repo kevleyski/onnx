@@ -1,14 +1,16 @@
+# Copyright (c) ONNX Project Contributors
+#
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import numpy as np
 
 import onnx
+from onnx.backend.test.case.base import Base
+from onnx.backend.test.case.node import expect
 
-from ..base import Base
-from . import expect
 
-
-def bernoulli_reference_implementation(x, dtype):  # type: ignore
+def bernoulli_reference_implementation(x, dtype):
     # binomial n = 1 equal bernoulli
     # This example and test-case is for informational purpose. The generator operator is
     # non-deterministic and may not produce the same values in different implementations
@@ -25,8 +27,8 @@ class Bernoulli(Base):
             outputs=["y"],
         )
 
-        x = np.random.uniform(0.0, 1.0, 10).astype(np.float)
-        y = bernoulli_reference_implementation(x, np.float)
+        x = np.random.uniform(0.0, 1.0, 10).astype(float)
+        y = bernoulli_reference_implementation(x, float)
         expect(node, inputs=[x], outputs=[y], name="test_bernoulli")
 
     @staticmethod
@@ -39,12 +41,12 @@ class Bernoulli(Base):
         )
 
         x = np.random.uniform(0.0, 1.0, 10).astype(np.float32)
-        y = bernoulli_reference_implementation(x, np.float64)
+        y = bernoulli_reference_implementation(x, float)
         expect(node, inputs=[x], outputs=[y], name="test_bernoulli_double")
 
     @staticmethod
     def export_bernoulli_with_seed() -> None:
-        seed = np.float(0)
+        seed = float(0)
         node = onnx.helper.make_node(
             "Bernoulli",
             inputs=["x"],

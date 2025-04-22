@@ -1,18 +1,20 @@
+# Copyright (c) ONNX Project Contributors
+#
 # SPDX-License-Identifier: Apache-2.0
+from __future__ import annotations
 
 import numpy as np
 
 import onnx
+from onnx.backend.test.case.base import Base
+from onnx.backend.test.case.node import expect
 
-from ..base import Base
-from . import expect
 
-
-def triu_reference_implementation(x, k=0):  # type: ignore
+def triu_reference_implementation(x, k=0):
     return np.triu(x, k)
 
 
-def tril_reference_implementation(x, k=0):  # type: ignore
+def tril_reference_implementation(x, k=0):
     return np.tril(x, k)
 
 
